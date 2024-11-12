@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"math/rand"
 	"os"
@@ -10,19 +11,23 @@ import (
 
 func main() {
 	// Configure generation parameters
-	fmt.Print("Give a number: ")
-	var numRows int // 1 million rows for testing (adjust as needed)
-	fmt.Scanf("%d", &numRows)
 	stations := []string{
 		"Hamburg", "Berlin", "Munich", "Frankfurt", "Stuttgart",
 		"Dresden", "Leipzig", "Hannover", "Nuremberg", "Bremen",
 	}
-	
-	file, err := os.Create("measurements_B.txt")
+
+	filename := flag.String("create", "measurement.txt", "To create a text file")
+	flag.Parse()
+
+	file, err := os.Create(*filename)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
+
+	fmt.Print("Give a number: ")
+	var numRows int // 1 million rows for testing (adjust as needed)
+	fmt.Scanf("%d", &numRows)
 
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
@@ -35,7 +40,7 @@ func main() {
 		station := stations[rand.Intn(len(stations))]
 		// Generate temperature between -50°C and 50°C
 		temp := rand.Float64()*100 - 50
-		
+
 		// Write to file with 1 decimal place precision
 		_, err := fmt.Fprintf(writer, "%s;%.1f\n", station, temp)
 		if err != nil {
