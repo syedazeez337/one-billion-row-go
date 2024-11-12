@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"runtime"
@@ -60,7 +61,7 @@ func processChunk(chunk []string, results map[string]*StationStats, mutex *sync.
 		if len(parts) != 2 {
 			continue
 		}
-		
+
 		station := parts[0]
 		temp, err := strconv.ParseFloat(parts[1], 64)
 		if err != nil {
@@ -100,14 +101,17 @@ func processChunk(chunk []string, results map[string]*StationStats, mutex *sync.
 }
 
 func main() {
+
+	filename := flag.String("file", "measurement.txt", "Get a file from user")
+	flag.Parse()
 	// Start timing
 	startTime := time.Now()
-	
+
 	// Print initial memory stats
 	fmt.Println("Initial memory stats:")
 	printMemUsage()
 
-	file, err := os.Open("measurements_B.txt")
+	file, err := os.Open(*filename)
 	if err != nil {
 		panic(err)
 	}
@@ -115,10 +119,10 @@ func main() {
 
 	numWorkers := runtime.NumCPU()
 	fmt.Printf("\nUsing %d worker goroutines\n", numWorkers)
-	
+
 	chunkSize := 100000
 	chunks := make(chan []string)
-	
+
 	var wg sync.WaitGroup
 	results := make(map[string]*StationStats)
 	var mutex sync.Mutex
@@ -140,11 +144,11 @@ func main() {
 	// Process file
 	scanner := bufio.NewScanner(file)
 	currentChunk := make([]string, 0, chunkSize)
-	
+
 	for scanner.Scan() {
 		currentChunk = append(currentChunk, scanner.Text())
 		totalMeasurements++
-		
+
 		if len(currentChunk) == chunkSize {
 			chunks <- currentChunk
 			currentChunk = make([]string, 0, chunkSize)
@@ -156,11 +160,11 @@ func main() {
 			}
 		}
 	}
-	
+
 	if len(currentChunk) > 0 {
 		chunks <- currentChunk
 	}
-	
+
 	close(chunks)
 	wg.Wait()
 
@@ -180,9 +184,9 @@ func main() {
 	duration := time.Since(startTime)
 	fmt.Printf("\nProcessing completed in: %v\n", duration)
 	fmt.Printf("Total measurements processed: %d\n", totalMeasurements)
-	fmt.Printf("Processing speed: %.2f million measurements/second\n", 
+	fmt.Printf("Processing speed: %.2f million measurements/second\n",
 		float64(totalMeasurements)/(duration.Seconds()*1_000_000))
-	
+
 	fmt.Println("\nFinal memory stats:")
 	printMemUsage()
 }
